@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Play, 
   Pause, 
+  Square,
   SkipBack, 
   SkipForward, 
   Volume2, 
   VolumeX, 
   Disc, 
-  Music, 
   ListMusic, 
   Radio
 } from 'lucide-react';
@@ -63,6 +63,12 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
     audioEngine.togglePlay();
   };
 
+  const handleStop = () => {
+    audioEngine.playClickSound();
+    audioEngine.stopMusic();
+    setCurrentTime(0);
+  };
+
   const handleNext = () => {
     audioEngine.playClickSound();
     audioEngine.nextTrack();
@@ -79,9 +85,6 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
     audioEngine.playClickSound();
     audioEngine.selectTrack(index);
     onTrackChange(track);
-    if (!isPlaying) {
-      audioEngine.startMusic();
-    }
     setShowPlaylist(false);
   };
 
@@ -121,56 +124,49 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="relative w-full bg-[#0a0d16]/95 border border-slate-800/80 rounded-2xl p-4 shadow-2xl backdrop-blur-md transition-all">
-      {/* Top Section: Now Playing Info & Playlist Toggle */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-3 border-b border-slate-800/60">
-        <div className="flex items-center gap-3.5 min-w-0">
-          {/* Animated Vinyl / Artwork */}
+    <div className="relative w-full bg-[#06000e] border-2 border-[#00f0ff] p-3 sm:p-4 shadow-[4px_4px_0_#ff007f] transition-all overflow-hidden">
+      {/* Glitch Scanline Beam */}
+      <div className="scanline-beam opacity-30" />
+
+      {/* Top Section: Subsystem telemetry & Channel list */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b-2 border-[#ff007f]/50">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Animated Vinyl / Oscillating Bit Core */}
           <div 
-            className="relative w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-slate-700/60 overflow-hidden"
-            style={{ 
-              background: `radial-gradient(circle at center, ${currentTrack.primaryColor}22 0%, #0d121f 100%)`,
-              boxShadow: isPlaying ? `0 0 16px -2px ${currentTrack.primaryColor}55` : 'none'
-            }}
+            className="relative w-11 h-11 bg-[#030007] flex items-center justify-center shrink-0 border-2 border-[#00f0ff] shadow-[2px_2px_0_#ff007f] overflow-hidden"
           >
             <Disc 
-              className={`w-6 h-6 transition-transform ${isPlaying ? 'animate-spin' : ''}`}
-              style={{ 
-                color: currentTrack.primaryColor,
-                animationDuration: '4s'
-              }}
+              className={`w-6 h-6 transition-transform ${isPlaying ? 'animate-spin text-[#ff007f]' : 'text-[#00f0ff]'}`}
+              style={{ animationDuration: '3s' }}
             />
             {isPlaying && (
-              <span 
-                className="absolute inset-0 rounded-xl pointer-events-none animate-pulse opacity-40 border"
-                style={{ borderColor: currentTrack.primaryColor }}
-              />
+              <span className="absolute inset-0 bg-[#00f0ff]/10 animate-ping pointer-events-none" />
             )}
           </div>
 
-          {/* Track Titles & Metadata */}
+          {/* Track Titles & Cryptic Machine Metadata */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wider font-mono px-1.5 py-0.5 rounded bg-slate-800/90 text-slate-300 border border-slate-700/50">
-                AI DEMO
+              <span className="text-[8px] font-pixel px-1.5 py-0.5 bg-[#ff007f] text-black font-bold">
+                STREAM_DSP
               </span>
-              <span className="text-xs font-mono text-slate-400">
-                {currentTrack.bpm} BPM · {currentTrack.key}
+              <span className="text-xs font-terminal text-[#00f0ff] tracking-widest">
+                CLK: {currentTrack.bpm}BPM :: KEY: {currentTrack.key}
               </span>
             </div>
-            <h3 className="text-base font-semibold text-slate-100 truncate mt-0.5 tracking-tight">
-              {currentTrack.title}
+            <h3 className="text-xs sm:text-sm font-pixel text-white truncate mt-1 glitch-text-sm">
+              {currentTrack.title.toUpperCase()}
             </h3>
-            <p className="text-xs text-slate-400 truncate">
-              {currentTrack.artist} · <span className="text-slate-500">{currentTrack.genre}</span>
+            <p className="text-xs font-terminal text-[#ff007f] truncate tracking-wider">
+              CORE: {currentTrack.artist.toUpperCase()} // <span className="text-[#00f0ff]">{currentTrack.genre.toUpperCase()}</span>
             </p>
           </div>
         </div>
 
         {/* Visualizer & Playlist Drawer Button */}
         <div className="w-full md:w-auto flex items-center justify-between md:justify-end gap-3">
-          <div className="w-36 md:w-48 hidden sm:block">
-            <AudioVisualizer currentTrack={currentTrack} isPlaying={isPlaying} height={36} />
+          <div className="w-32 sm:w-44 border-2 border-[#00f0ff] bg-black p-0.5 shadow-[2px_2px_0_#ff007f]">
+            <AudioVisualizer currentTrack={currentTrack} isPlaying={isPlaying} height={32} />
           </div>
 
           <button
@@ -178,25 +174,25 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
               audioEngine.playClickSound();
               setShowPlaylist(!showPlaylist);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[9px] font-pixel border-2 transition-all whitespace-nowrap cursor-pointer ${
               showPlaylist 
-                ? 'bg-slate-800 text-cyan-400 border-cyan-500/40' 
-                : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white'
+                ? 'bg-[#ff007f] text-black border-[#00f0ff] shadow-[2px_2px_0_#00f0ff]' 
+                : 'bg-[#04000a] text-[#00f0ff] border-[#00f0ff] shadow-[2px_2px_0_#ff007f] hover:bg-[#00f0ff] hover:text-black'
             }`}
-            title="Toggle AI Playlist"
+            title="Switch Audio Channel"
           >
-            <ListMusic className="w-4 h-4" />
-            <span>3 AI Tracks</span>
+            <ListMusic className="w-3.5 h-3.5" />
+            <span>3_STREAMS</span>
           </button>
         </div>
       </div>
 
       {/* Playlist Drawer (Collapsible) */}
       {showPlaylist && (
-        <div className="mt-3 p-2 bg-[#06080e] rounded-xl border border-slate-800/90 space-y-1.5 transition-all">
-          <div className="flex items-center justify-between px-2 py-1 text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-            <span>Synthesized Demo Tracks (Zero Lag / Pure Web Audio)</span>
-            <Radio className="w-3 h-3 text-cyan-400 animate-pulse" />
+        <div className="mt-3 p-2 bg-[#030007] border-2 border-[#ff007f] shadow-[3px_3px_0_#00f0ff] space-y-1 transition-all">
+          <div className="flex items-center justify-between px-2 py-1 text-[9px] font-pixel text-[#ff007f]">
+            <span>SYNTH_CORE // DEMO_STREAMS</span>
+            <Radio className="w-3 h-3 text-[#00f0ff] animate-pulse" />
           </div>
           {TRACKS.map((track, idx) => {
             const isSelected = track.id === currentTrack.id;
@@ -204,24 +200,23 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
               <button
                 key={track.id}
                 onClick={() => handleTrackSelect(track, idx)}
-                className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all ${
+                className={`w-full flex items-center justify-between p-2 text-left transition-all cursor-pointer ${
                   isSelected 
-                    ? 'bg-slate-800/90 border border-slate-700 text-white' 
-                    : 'hover:bg-slate-900/60 text-slate-300 border border-transparent'
+                    ? 'bg-[#00f0ff] text-black font-bold border-l-4 border-[#ff007f]' 
+                    : 'bg-[#080014] text-[#00f0ff] hover:bg-[#ff007f]/20 border border-[#00f0ff]/30'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full shrink-0" 
-                    style={{ backgroundColor: track.primaryColor }}
-                  />
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 bg-[#ff007f]" />
                   <div className="truncate">
-                    <p className="text-xs font-medium truncate">{track.title}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{track.genre} · {track.bpm} BPM</p>
+                    <p className="text-[10px] font-pixel truncate">{track.title.toUpperCase()}</p>
+                    <p className={`text-xs font-terminal truncate tracking-wider ${isSelected ? 'text-black font-bold' : 'text-[#ff007f]'}`}>
+                      {track.genre.toUpperCase()} // {track.bpm} BPM
+                    </p>
                   </div>
                 </div>
                 <div className="text-right shrink-0 pl-2">
-                  <span className="text-[11px] font-mono text-slate-400">
+                  <span className="text-xs font-terminal font-bold tracking-widest">
                     {formatTime(track.duration)}
                   </span>
                 </div>
@@ -245,77 +240,98 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
             onChange={handleSeek}
             onMouseUp={handleSeekCommit}
             onTouchEnd={handleSeekCommit}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400 focus:outline-none"
+            className="w-full h-2 bg-[#030007] border border-[#00f0ff] appearance-none cursor-pointer accent-[#ff007f]"
             style={{
-              background: `linear-gradient(to right, ${currentTrack.primaryColor} ${progressPercent}%, #1e293b ${progressPercent}%)`
+              background: `linear-gradient(to right, #00f0ff ${progressPercent}%, #030007 ${progressPercent}%)`
             }}
           />
         </div>
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-0.5">
-          <span>{formatTime(currentTime)}</span>
-          <span className="text-slate-500">{currentTrack.aiModel}</span>
-          <span>{formatTime(duration)}</span>
+        <div className="flex items-center justify-between text-xs font-terminal text-[#00f0ff] tracking-widest px-0.5">
+          <span>HEAD: {formatTime(currentTime)}</span>
+          <span className="text-[#ff007f] font-pixel text-[8px]">{currentTrack.aiModel.toUpperCase()}</span>
+          <span>LEN: {formatTime(duration)}</span>
         </div>
       </div>
 
-      {/* Main Controls Row: Prev, Play/Pause, Next, Volume */}
-      <div className="flex items-center justify-between mt-3 pt-2">
-        {/* Left: Quick genre tag */}
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400">
-          <Music className="w-3.5 h-3.5 text-slate-500" />
-          <span className="font-mono text-[11px]">{currentTrack.scale}</span>
+      {/* Main Controls Row: Prev, Play/Pause, Stop, Next, Volume */}
+      <div className="flex items-center justify-between mt-3 pt-2 border-t-2 border-[#ff007f]/40">
+        {/* Left: Quick status badge */}
+        <div className="hidden sm:flex items-center gap-2">
+          {isPlaying ? (
+            <span className="inline-flex items-center gap-1.5 text-[8px] font-pixel bg-[#ff007f] text-black px-2 py-1 border border-[#00f0ff] shadow-[2px_2px_0_#00f0ff]">
+              <span className="w-1.5 h-1.5 bg-black animate-ping" />
+              STREAMING
+            </span>
+          ) : currentTime > 0 ? (
+            <span className="inline-flex items-center gap-1 text-[8px] font-pixel bg-[#00f0ff] text-black px-2 py-1 border border-[#ff007f] shadow-[2px_2px_0_#ff007f]">
+              PAUSED
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[8px] font-pixel bg-[#030007] text-[#00f0ff] px-2 py-1 border border-[#00f0ff]/50">
+              STANDBY
+            </span>
+          )}
         </div>
 
         {/* Center: Playback Transport Buttons */}
-        <div className="flex items-center gap-3 mx-auto sm:mx-0">
+        <div className="flex items-center gap-2 mx-auto sm:mx-0">
           <button
             onClick={handlePrev}
-            className="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800/70 transition-colors"
-            title="Previous Track"
+            className="p-2 bg-[#030007] text-[#00f0ff] border-2 border-[#00f0ff] shadow-[2px_2px_0_#ff007f] hover:bg-[#00f0ff] hover:text-black transition-all cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+            title="Previous Stream"
             aria-label="Previous Track"
           >
-            <SkipBack className="w-5 h-5" />
+            <SkipBack className="w-4 h-4" />
           </button>
 
           <button
             onClick={handlePlayPause}
-            className="relative p-3.5 rounded-full text-slate-950 font-bold transition-transform active:scale-95 shadow-lg"
-            style={{
-              backgroundColor: currentTrack.primaryColor,
-              boxShadow: isPlaying ? `0 0 20px -2px ${currentTrack.primaryColor}` : '0 0 10px -2px rgba(0,0,0,0.5)'
-            }}
-            title={isPlaying ? 'Pause Music' : 'Play AI Synthesizer Music'}
+            className={`p-2.5 border-2 text-black transition-all cursor-pointer active:translate-x-0.5 active:translate-y-0.5 font-pixel ${
+              isPlaying 
+                ? 'bg-[#ff007f] border-[#00f0ff] shadow-[3px_3px_0_#00f0ff]' 
+                : 'bg-[#00f0ff] border-[#ff007f] shadow-[3px_3px_0_#ff007f]'
+            }`}
+            title={isPlaying ? 'Halt Output' : 'Stream DSP Audio'}
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
-              <Pause className="w-5 h-5 fill-current" />
+              <Pause className="w-4 h-4 fill-current" />
             ) : (
-              <Play className="w-5 h-5 fill-current ml-0.5" />
+              <Play className="w-4 h-4 fill-current ml-0.5" />
             )}
           </button>
 
           <button
+            onClick={handleStop}
+            className="p-2 bg-[#030007] text-[#ff007f] border-2 border-[#ff007f] shadow-[2px_2px_0_#00f0ff] hover:bg-[#ff007f] hover:text-black transition-all cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+            title="Halt & Rewind"
+            aria-label="Stop Music"
+          >
+            <Square className="w-4 h-4 fill-current" />
+          </button>
+
+          <button
             onClick={handleNext}
-            className="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800/70 transition-colors"
-            title="Next Track"
+            className="p-2 bg-[#030007] text-[#00f0ff] border-2 border-[#00f0ff] shadow-[2px_2px_0_#ff007f] hover:bg-[#00f0ff] hover:text-black transition-all cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+            title="Next Stream"
             aria-label="Next Track"
           >
-            <SkipForward className="w-5 h-5" />
+            <SkipForward className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Right: Volume & Mute */}
-        <div className="flex items-center gap-2">
+        {/* Right: Volume Potentiometer */}
+        <div className="flex items-center gap-1.5">
           <button
             onClick={toggleMute}
-            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800/60 transition-colors"
+            className="p-1.5 text-[#00f0ff] hover:text-[#ff007f] transition-colors cursor-pointer"
             title={isMuted ? 'Unmute' : 'Mute'}
             aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted || volume === 0 ? (
-              <VolumeX className="w-4 h-4 text-rose-400" />
+              <VolumeX className="w-4 h-4 text-[#ff007f]" />
             ) : (
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4 text-[#00f0ff]" />
             )}
           </button>
           <input
@@ -325,9 +341,8 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
             step="0.05"
             value={isMuted ? 0 : volume}
             onChange={handleVolumeChange}
-            className="w-16 sm:w-20 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400 focus:outline-none"
-            title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
-            aria-label="Volume slider"
+            className="w-16 sm:w-20 h-1.5 bg-[#030007] border border-[#ff007f] appearance-none cursor-pointer accent-[#00f0ff]"
+            title={`Gain: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
           />
         </div>
       </div>

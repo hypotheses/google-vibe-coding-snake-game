@@ -7,7 +7,7 @@ export type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
 
 export type GameStatus = 'IDLE' | 'PLAYING' | 'PAUSED' | 'GAME_OVER';
 
-export type Difficulty = 'chill' | 'normal' | 'overdrive';
+export type Difficulty = 'chill' | 'normal' | 'overdrive' | 'custom';
 
 export type FoodType = 'energy' | 'quantum' | 'pulse';
 
@@ -48,13 +48,14 @@ export interface HighScoreRecord {
   foodCount: number;
   snakeLength: number;
   difficulty: Difficulty;
+  customSpeedMs?: number;
   date: string;
   trackPlayedTitle?: string;
 }
 
 export interface GameSettings {
   difficulty: Difficulty;
+  customSpeedMs: number;
   soundEffects: boolean;
-  gridVisual: boolean;
-  glowEffect: boolean;
+  autoPlayMusic?: boolean;
 }

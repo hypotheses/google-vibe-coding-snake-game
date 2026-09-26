@@ -2,58 +2,272 @@
 
 @layer base {
   :root {
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-    --font-display: 'Syne', sans-serif;
+    --font-pixel: 'Press Start 2P', monospace;
+    --font-terminal: 'VT323', monospace;
+    --font-silkscreen: 'Silkscreen', monospace;
+    --font-tech: 'Share Tech Mono', monospace;
   }
 
   body {
-    font-family: var(--font-sans);
-    background-color: #07090e;
-    color: #f1f5f9;
+    font-family: var(--font-tech);
+    background-color: #030007;
+    color: #00f0ff;
+    overflow-x: hidden;
   }
 }
 
-/* Custom subtle CRT scanlines & glow effects */
-.neon-glow-cyan {
-  box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.4), 0 0 40px -10px rgba(6, 182, 212, 0.2);
+/* RAW PIXEL FONTS */
+.font-pixel {
+  font-family: 'Press Start 2P', monospace;
 }
 
-.neon-glow-purple {
-  box-shadow: 0 0 20px -3px rgba(168, 85, 247, 0.4), 0 0 40px -10px rgba(168, 85, 247, 0.2);
+.font-terminal {
+  font-family: 'VT323', monospace;
 }
 
-.neon-glow-green {
-  box-shadow: 0 0 20px -3px rgba(34, 197, 94, 0.4), 0 0 40px -10px rgba(34, 197, 94, 0.2);
+.font-silkscreen {
+  font-family: 'Silkscreen', monospace;
 }
 
-.neon-text-cyan {
-  text-shadow: 0 0 12px rgba(6, 182, 212, 0.7);
+.font-tech {
+  font-family: 'Share Tech Mono', monospace;
 }
 
-.neon-text-green {
-  text-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+/* JARRING COLOR CONTRASTS & RGB CHROMATIC ABERRATIONS */
+.glitch-text {
+  text-shadow: 2px 0 0 #ff007f, -2px 0 0 #00f0ff;
 }
 
-.neon-text-pink {
-  text-shadow: 0 0 12px rgba(244, 63, 94, 0.7);
+.glitch-text-sm {
+  text-shadow: 1px 0 0 #ff007f, -1px 0 0 #00f0ff;
 }
 
-/* Custom scrollbar for sleek dark neon theme */
+.glitch-text-magenta {
+  color: #ff007f;
+  text-shadow: 2px 0 0 #00f0ff, -1px 0 0 #ffffff;
+}
+
+.glitch-text-cyan {
+  color: #00f0ff;
+  text-shadow: 2px 0 0 #ff007f, -1px 0 0 #ffffff;
+}
+
+/* HARD BRUTALIST GLITCH BOXES (NO ROUNDED CORNERS) */
+.glitch-box {
+  background: #06000e;
+  border: 2px solid #00f0ff;
+  box-shadow: 4px 4px 0px #ff007f;
+}
+
+.glitch-box-magenta {
+  background: #06000e;
+  border: 2px solid #ff007f;
+  box-shadow: 4px 4px 0px #00f0ff;
+}
+
+.glitch-box-subtle {
+  background: #080014;
+  border: 1px solid #00f0ff;
+  box-shadow: 2px 2px 0px #ff007f;
+}
+
+/* GLITCH BUTTONS */
+.glitch-btn {
+  font-family: 'Press Start 2P', monospace;
+  border: 2px solid #00f0ff;
+  background-color: #00f0ff;
+  color: #000000;
+  box-shadow: 3px 3px 0px #ff007f;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  user-select: none;
+}
+
+.glitch-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px #ff007f;
+}
+
+.glitch-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #ff007f;
+}
+
+.glitch-btn-magenta {
+  font-family: 'Press Start 2P', monospace;
+  border: 2px solid #ff007f;
+  background-color: #ff007f;
+  color: #000000;
+  box-shadow: 3px 3px 0px #00f0ff;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  user-select: none;
+}
+
+.glitch-btn-magenta:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px #00f0ff;
+}
+
+.glitch-btn-magenta:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #00f0ff;
+}
+
+.glitch-btn-outline {
+  font-family: 'Press Start 2P', monospace;
+  border: 2px solid #00f0ff;
+  background-color: #05000a;
+  color: #00f0ff;
+  box-shadow: 3px 3px 0px #ff007f;
+  transition: transform 0.05s ease, box-shadow 0.05s ease, background-color 0.05s ease;
+  user-select: none;
+}
+
+.glitch-btn-outline:hover {
+  background-color: #00f0ff;
+  color: #000000;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #ff007f;
+}
+
+.glitch-btn-outline:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #ff007f;
+}
+
+/* CRT SCANLINE & STATIC NOISE OVERLAY */
+.crt-overlay {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.45) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 127, 0.04),
+    rgba(0, 0, 0, 0),
+    rgba(0, 240, 255, 0.04)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+/* STATIC NOISE OVERLAY */
+.static-noise {
+  background-image: repeating-radial-gradient(circle at 17% 32%, rgba(255, 0, 127, 0.06), rgba(0, 240, 255, 0.06) 1px, transparent 2px, transparent 6px),
+                    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25) 1px, transparent 1px, transparent 2px);
+}
+
+/* SCREEN TEAR & STATIC NOISE ANIMATIONS */
+@keyframes screen-tear {
+  0% {
+    clip-path: inset(0 0 0 0);
+    transform: skew(0deg);
+  }
+  20% {
+    clip-path: inset(15% 0 70% 0);
+    transform: skew(-1.5deg) translateX(-2px);
+  }
+  22% {
+    clip-path: inset(65% 0 10% 0);
+    transform: skew(2deg) translateX(3px);
+  }
+  24% {
+    clip-path: inset(0 0 0 0);
+    transform: skew(0deg);
+  }
+  50% {
+    clip-path: inset(40% 0 45% 0);
+    transform: skew(1.2deg) translateX(-1px);
+  }
+  52% {
+    clip-path: inset(0 0 0 0);
+    transform: skew(0deg);
+  }
+  80% {
+    clip-path: inset(75% 0 8% 0);
+    transform: skew(-2deg) translateX(2px);
+  }
+  82% {
+    clip-path: inset(0 0 0 0);
+    transform: skew(0deg);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: skew(0deg);
+  }
+}
+
+.animate-screen-tear {
+  animation: screen-tear 4s infinite steps(1, end);
+}
+
+@keyframes glitch-twitch {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-2px, 1px);
+  }
+  40% {
+    transform: translate(2px, -1px);
+  }
+  60% {
+    transform: translate(-1px, -2px);
+  }
+  80% {
+    transform: translate(1px, 2px);
+  }
+}
+
+.glitch-hover:hover {
+  animation: glitch-twitch 0.2s infinite linear;
+}
+
+@keyframes scanline-sweep {
+  0% {
+    top: -100%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.scanline-beam {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 10px #00f0ff, 0 0 20px #ff007f;
+  animation: scanline-sweep 3.5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes static-flicker {
+  0%, 100% { opacity: 0.98; }
+  50% { opacity: 0.92; }
+  52% { opacity: 0.8; }
+  54% { opacity: 0.95; }
+  85% { opacity: 0.88; }
+}
+
+.crt-flicker {
+  animation: static-flicker 0.15s infinite;
+}
+
+/* RETRO PIXEL SCROLLBAR */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090c14;
+  background: #030007;
+  border-left: 2px solid #ff007f;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+  background: #00f0ff;
+  border: 2px solid #030007;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #06b6d4;
+  background: #ff007f;
 }

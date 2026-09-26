@@ -11,14 +11,14 @@ export const TRACKS: MusicTrack[] = [
     id: 'track-cyberpulse',
     title: 'Cyberpulse Drift',
     artist: 'Neural Waveform // SynthAI',
-    genre: 'Synthwave / Outrun',
+    genre: 'Synthwave / Glitch',
     aiModel: 'Gemini Sonic Synth v2.4',
     bpm: 120,
     duration: 160,
-    primaryColor: '#06b6d4', // Cyan
-    secondaryColor: '#3b82f6', // Blue
-    glowShadow: 'rgba(6, 182, 212, 0.4)',
-    description: 'Rolling 16th-note analog basslines, 808 rhythms, and euphoric arpeggiated neon leads.',
+    primaryColor: '#00f0ff', // Pure Cyan
+    secondaryColor: '#ff007f', // Pure Magenta
+    glowShadow: 'rgba(0, 240, 255, 0.4)',
+    description: 'Rolling analog basslines, 808 rhythms, and euphoric arpeggiated neon leads.',
     scale: 'A Minor Pentatonic',
     key: 'A min'
   },
@@ -30,9 +30,9 @@ export const TRACKS: MusicTrack[] = [
     aiModel: 'OmniBeat Matrix 9000',
     bpm: 138,
     duration: 174,
-    primaryColor: '#22c55e', // Emerald / Neon Green
-    secondaryColor: '#10b981', // Lime
-    glowShadow: 'rgba(34, 197, 94, 0.4)',
+    primaryColor: '#ff007f', // Pure Magenta
+    secondaryColor: '#00f0ff', // Pure Cyan
+    glowShadow: 'rgba(255, 0, 127, 0.4)',
     description: 'High-octane industrial saw bass, rapid drum syncopations, and arcade acid synth stabs.',
     scale: 'D Minor Cyberpunk',
     key: 'D min'
@@ -41,13 +41,13 @@ export const TRACKS: MusicTrack[] = [
     id: 'track-starlight',
     title: 'Starlight Matrix',
     artist: 'DreamPulse AI Studio',
-    genre: 'Chillwave / Cyber Lo-Fi',
+    genre: 'Chillwave / Ambient Glitch',
     aiModel: 'Lyria Ambient Transformer',
     bpm: 94,
     duration: 190,
-    primaryColor: '#ec4899', // Pink / Magenta
-    secondaryColor: '#a855f7', // Purple
-    glowShadow: 'rgba(236, 72, 153, 0.4)',
+    primaryColor: '#00f0ff', // Pure Cyan
+    secondaryColor: '#ff007f', // Pure Magenta
+    glowShadow: 'rgba(0, 240, 255, 0.4)',
     description: 'Lush detuned harmonic pads, soothing sub-bass, and crystal chime melodies.',
     scale: 'F Minor / Ab Maj',
     key: 'F min'
@@ -75,6 +75,7 @@ class AudioEngine {
   private analyser: AnalyserNode | null = null;
 
   private isPlaying = false;
+  private isResuming = false;
   private currentTrackIndex = 0;
   private playbackStartTime = 0;
   private seekOffset = 0;
@@ -86,6 +87,7 @@ class AudioEngine {
   private currentStep = 0;
   private nextNoteTime = 0;
   private stepIntervalSec = 0.125; // 16th note default
+  private activeMusicNodes: Array<{ stop?: () => void; disconnect: () => void }> = [];
 
   // Listeners
   private onStateChangeCallbacks: Array<(state: { isPlaying: boolean; trackIndex: number; currentTime: number; duration: number }) => void> = [];
@@ -104,7 +106,7 @@ class AudioEngine {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
 
       this.musicGain = this.ctx.createGain();
-      this.musicGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+      this.musicGain.gain.setValueAtTime(this.isPlaying ? 0.85 : 0, this.ctx.currentTime);
 
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.setValueAtTime(0.9, this.ctx.currentTime);
@@ -126,34 +128,92 @@ class AudioEngine {
     return this.analyser;
   }
 
-  public async startMusic() {
-    this.init();
-    if (!this.ctx) return;
-
-    if (this.ctx.state === 'suspended') {
-      await this.ctx.resume();
+  private registerMusicNode(node: { stop?: () => void; disconnect: () => void }) {
+    this.activeMusicNodes.push(node);
+    if (this.activeMusicNodes.length > 80) {
+      this.activeMusicNodes.shift();
     }
+  }
 
-    if (this.isPlaying) return;
+  private stopAllActiveMusicNodes() {
+    for (const node of this.activeMusicNodes) {
+      try {
+        node.stop?.();
+        node.disconnect();
+      } catch {
+        // ignore already stopped nodes
+      }
+    }
+    this.activeMusicNodes = [];
+  }
 
-    this.isPlaying = true;
-    this.playbackStartTime = this.ctx.currentTime - this.seekOffset;
-    this.currentStep = Math.floor(this.seekOffset / this.getStepDuration());
-    this.nextNoteTime = this.ctx.currentTime;
+  public async startMusic() {
+    if (this.isPlaying || this.isResuming) return;
+    this.isResuming = true;
 
-    this.runScheduler();
-    this.notifyState();
+    try {
+      this.init();
+      if (!this.ctx) return;
+
+      if (this.ctx.state === 'suspended') {
+        await this.ctx.resume();
+      }
+
+      // Clear any prior timer to prevent dual-scheduler runaway
+      if (this.schedulerTimer !== null) {
+        window.clearTimeout(this.schedulerTimer);
+        this.schedulerTimer = null;
+      }
+
+      this.isPlaying = true;
+
+      // Restore music gain smoothly
+      if (this.musicGain && this.ctx) {
+        this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.musicGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+      }
+
+      this.playbackStartTime = this.ctx.currentTime - this.seekOffset;
+      this.currentStep = Math.floor(this.seekOffset / this.getStepDuration());
+      this.nextNoteTime = this.ctx.currentTime;
+
+      this.runScheduler();
+      this.notifyState();
+    } finally {
+      this.isResuming = false;
+    }
   }
 
   public pauseMusic() {
-    if (!this.isPlaying) return;
-    this.isPlaying = false;
-    if (this.ctx) {
-      this.seekOffset = (this.ctx.currentTime - this.playbackStartTime) % this.getCurrentTrack().duration;
-    }
+    // Clear scheduled timer immediately
     if (this.schedulerTimer !== null) {
       window.clearTimeout(this.schedulerTimer);
       this.schedulerTimer = null;
+    }
+
+    if (!this.isPlaying) return;
+    this.isPlaying = false;
+
+    if (this.ctx) {
+      this.seekOffset = (this.ctx.currentTime - this.playbackStartTime) % this.getCurrentTrack().duration;
+      // Cut off music output immediately and cancel future nodes
+      if (this.musicGain) {
+        this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.musicGain.gain.setValueAtTime(0, this.ctx.currentTime);
+      }
+    }
+
+    this.stopAllActiveMusicNodes();
+    this.notifyState();
+  }
+
+  public stopMusic() {
+    this.pauseMusic();
+    this.seekOffset = 0;
+    this.currentStep = 0;
+    if (this.ctx) {
+      this.playbackStartTime = this.ctx.currentTime;
+      this.nextNoteTime = this.ctx.currentTime;
     }
     this.notifyState();
   }
@@ -167,23 +227,38 @@ class AudioEngine {
   }
 
   public nextTrack() {
+    const wasPlaying = this.isPlaying;
+    this.pauseMusic();
     this.currentTrackIndex = (this.currentTrackIndex + 1) % TRACKS.length;
     this.resetPlaybackPosition();
+    if (wasPlaying) {
+      this.startMusic();
+    }
   }
 
   public prevTrack() {
+    const wasPlaying = this.isPlaying;
     if (this.getCurrentTime() > 3) {
       this.seek(0);
       return;
     }
+    this.pauseMusic();
     this.currentTrackIndex = (this.currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
     this.resetPlaybackPosition();
+    if (wasPlaying) {
+      this.startMusic();
+    }
   }
 
   public selectTrack(index: number) {
     if (index >= 0 && index < TRACKS.length) {
+      const wasPlaying = this.isPlaying;
+      this.pauseMusic();
       this.currentTrackIndex = index;
       this.resetPlaybackPosition();
+      if (wasPlaying) {
+        this.startMusic();
+      }
     }
   }
 
@@ -194,6 +269,7 @@ class AudioEngine {
       this.playbackStartTime = this.ctx.currentTime;
       this.nextNoteTime = this.ctx.currentTime;
     }
+    this.stopAllActiveMusicNodes();
     this.notifyState();
   }
 
@@ -459,7 +535,7 @@ class AudioEngine {
 
   // 1. 808-style Kick
   private synthKick(time: number, startFreq: number, endFreq: number, decay: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -473,13 +549,16 @@ class AudioEngine {
     osc.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(osc);
+    this.registerMusicNode(gain);
+
     osc.start(time);
     osc.stop(time + decay);
   }
 
   // 2. Noise Snare
   private synthSnare(time: number, decay: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
 
     // White noise buffer
     const bufferSize = Math.floor(this.ctx.sampleRate * decay);
@@ -517,6 +596,11 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(noise);
+    this.registerMusicNode(toneOsc);
+    this.registerMusicNode(gain);
+    this.registerMusicNode(toneGain);
+
     noise.start(time);
     noise.stop(time + decay);
     toneOsc.start(time);
@@ -525,7 +609,7 @@ class AudioEngine {
 
   // 3. Hi-Hat
   private synthHiHat(time: number, isOpen: boolean, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const decay = isOpen ? 0.18 : 0.04;
     const bufferSize = Math.floor(this.ctx.sampleRate * decay);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -549,13 +633,16 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(noise);
+    this.registerMusicNode(gain);
+
     noise.start(time);
     noise.stop(time + decay);
   }
 
   // 4. Snare Clap
   private synthClap(time: number, decay: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const bufferSize = Math.floor(this.ctx.sampleRate * decay);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -579,13 +666,16 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(noise);
+    this.registerMusicNode(gain);
+
     noise.start(time);
     noise.stop(time + decay);
   }
 
   // 5. Sawtooth Bass
   private synthBassSaw(time: number, freq: number, duration: number, gainVal: number, cutoff: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
@@ -605,13 +695,16 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(osc);
+    this.registerMusicNode(gain);
+
     osc.start(time);
     osc.stop(time + duration);
   }
 
   // 6. Sub Bass (Sine)
   private synthSubBass(time: number, freq: number, duration: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
@@ -624,13 +717,16 @@ class AudioEngine {
     osc.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(osc);
+    this.registerMusicNode(gain);
+
     osc.start(time);
     osc.stop(time + duration);
   }
 
   // 7. Pluck Synth
   private synthPluck(time: number, freq: number, duration: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
@@ -649,13 +745,16 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(osc);
+    this.registerMusicNode(gain);
+
     osc.start(time);
     osc.stop(time + duration);
   }
 
   // 8. Lead Square (Acid style)
   private synthLeadSquare(time: number, freq: number, duration: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const osc = this.ctx.createOscillator();
     const filter = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
@@ -674,13 +773,16 @@ class AudioEngine {
     filter.connect(gain);
     gain.connect(this.musicGain);
 
+    this.registerMusicNode(osc);
+    this.registerMusicNode(gain);
+
     osc.start(time);
     osc.stop(time + duration);
   }
 
   // 9. Ambient Chime
   private synthChime(time: number, freq: number, duration: number, gainVal: number) {
-    if (!this.ctx || !this.musicGain) return;
+    if (!this.isPlaying || !this.ctx || !this.musicGain) return;
     const osc1 = this.ctx.createOscillator();
     const osc2 = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -697,6 +799,10 @@ class AudioEngine {
     osc1.connect(gain);
     osc2.connect(gain);
     gain.connect(this.musicGain);
+
+    this.registerMusicNode(osc1);
+    this.registerMusicNode(osc2);
+    this.registerMusicNode(gain);
 
     osc1.start(time);
     osc2.start(time);

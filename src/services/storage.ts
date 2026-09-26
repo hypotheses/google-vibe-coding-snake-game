@@ -55,7 +55,8 @@ export function saveHighScore(
   foodCount: number,
   snakeLength: number,
   difficulty: Difficulty,
-  trackPlayedTitle?: string
+  trackPlayedTitle?: string,
+  customSpeedMs?: number
 ): { isNewHighScore: boolean; rank: number } {
   try {
     const scores = getHighScores();
@@ -68,6 +69,7 @@ export function saveHighScore(
       foodCount,
       snakeLength,
       difficulty,
+      customSpeedMs,
       date: new Date().toISOString().split('T')[0],
       trackPlayedTitle
     };
@@ -92,21 +94,36 @@ export function clearHighScores(): void {
   }
 }
 
-export function getSavedSettings(): { difficulty: Difficulty; soundEffects: boolean } {
+export interface StoredSettings {
+  difficulty: Difficulty;
+  customSpeedMs: number;
+  soundEffects: boolean;
+  autoPlayMusic: boolean;
+}
+
+export function getSavedSettings(): StoredSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return {
+        difficulty: parsed.difficulty || 'normal',
+        customSpeedMs: typeof parsed.customSpeedMs === 'number' ? parsed.customSpeedMs : 90,
+        soundEffects: parsed.soundEffects !== false,
+        autoPlayMusic: parsed.autoPlayMusic === true // default false to never play music non-stop unexpectedly!
+      };
     }
   } catch {
     // ignore
   }
-  return { difficulty: 'normal', soundEffects: true };
+  return { difficulty: 'normal', customSpeedMs: 90, soundEffects: true, autoPlayMusic: false };
 }
 
-export function saveSettings(settings: { difficulty: Difficulty; soundEffects: boolean }): void {
+export function saveSettings(settings: Partial<StoredSettings>): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    const current = getSavedSettings();
+    const merged = { ...current, ...settings };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
   } catch {
     // ignore
   }
